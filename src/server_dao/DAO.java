@@ -1,43 +1,47 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package server_dao;
 
-/**
- *
- * @author Admin
- */
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class DAO {
-    // Biến con (connection) dùng chung cho toàn bộ server
-    // static để đảm bảo chỉ có duy nhất 1 kết nối được tạo ra
     public static Connection con;
     
     public DAO() {
         if(con == null){
-            // Thông số kết nối XAMPP mặc định
             String dbUrl = "jdbc:mysql://localhost:3306/carodb";
-            String dbClass = "com.mysql.cj.jdbc.Driver";
-            String user = "root";     // Mặc định XAMPP là root
-            String pass = "";         // Mặc định XAMPP không có mật khẩu
-
+            String dbClass = "com.mysql.jdbc.Driver"; // Bản 5
+            String user = "root";
+            String pass = "";
             try {
-                // 1. Nạp Driver
                 Class.forName(dbClass);
-                
-                // 2. Mở kết nối
                 con = DriverManager.getConnection(dbUrl, user, pass);
-                
-                System.out.println("Kết nối Database thành công!");
-                
+                System.out.println("Ket noi DB thanh cong");
             } catch(Exception e) {
-                // In lỗi ra nếu kết nối thất bại (để debug)
-                System.out.println("Lỗi kết nối Database!");
-                e.printStackTrace();
+                System.out.println("Loi ket noi DB!");
             }
         }
+    }
+    
+    // --- HÀM CHECK LOGIN (Chuyển từ ServerThread sang đây) ---
+    public boolean checkLogin(String username, String password) {
+        try {
+            // Đảm bảo kết nối
+            if (con == null || con.isClosed()) new DAO();
+            
+            String sql = "SELECT * FROM user WHERE Username = ? AND Password = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, username);
+            ps.setString(2, password);
+            
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return true; // Tìm thấy user
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false; // Không tìm thấy hoặc lỗi
     }
 }

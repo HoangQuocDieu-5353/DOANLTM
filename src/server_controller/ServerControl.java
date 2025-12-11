@@ -22,14 +22,14 @@ public class ServerControl {
             
             // 2. Mở cổng 5555 để lắng nghe
             ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("Server đang chạy tại cổng " + port + "...");
+            System.out.println("Server dang chay tai cong " + port + "...");
             
             // 3. Vòng lặp vô tận để liên tục nhận khách
             while(true) {
                 // Lệnh này sẽ TREO máy ở đây để chờ Client kết nối
                 Socket clientSocket = serverSocket.accept();
                 
-                System.out.println("Có người kết nối: " + clientSocket.getInetAddress());
+                System.out.println("Co nguoi ket noi: " + clientSocket.getInetAddress());
                 
                 // 4. Tạo một luồng riêng (ServerThread) để phục vụ người này
                 ServerThread serverThread = new ServerThread(clientSocket);
