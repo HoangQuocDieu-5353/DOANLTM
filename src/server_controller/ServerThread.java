@@ -50,6 +50,23 @@ public class ServerThread extends Thread {
                     }
                     out.flush();
                 }
+                else if (command.equals("REGISTER")) {
+                    // Cấu trúc: REGISTER|username|password
+                    String username = data[1];
+                    String pass = data[2];
+                    
+                    // Gọi hàm register bên DAO
+                    boolean isSuccess = dao.register(username, pass);
+                    
+                    if (isSuccess) {
+                        out.writeUTF("REGISTER_OK");
+                        System.out.println("User " + username + " dang ky thanh cong!");
+                    } else {
+                        out.writeUTF("REGISTER_FAIL");
+                        System.out.println("User " + username + " dang ky that bai (trung ten)!");
+                    }
+                    out.flush();
+                }
             }
         } catch (IOException e) {
             System.out.println("Client da ngat ket noi");

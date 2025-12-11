@@ -72,10 +72,14 @@ public class LoginUI extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        // Nếu bấm nút Đăng Nhập -> Gọi hàm xử lý đăng nhập
         if (e.getSource() == btnLogin) {
             xuLyDangNhap();
-        } else if (e.getSource() == btnRegister) {
-            JOptionPane.showMessageDialog(this, "Chức năng đăng ký đang phát triển!");
+        } 
+        // Nếu bấm nút Đăng Ký -> Mở form đăng ký
+        else if (e.getSource() == btnRegister) {
+            this.dispose();
+            new RegisterFrm();
         }
     }
 
