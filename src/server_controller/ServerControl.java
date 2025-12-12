@@ -10,37 +10,72 @@ package server_controller;
  */
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Vector; 
 import server_dao.DAO;
 
 public class ServerControl {
     private int port = 5555;
     
+    // --- MỚI: Danh sách chứa tất cả các luồng nhân viên đang chạy ---
+    // Dùng static để các file khác (như ServerThread) có thể gọi được
+    public static Vector<ServerThread> listServerThreads = new Vector<>();
+    
     public ServerControl() {
         try {
-            // 1. Mở kết nối Database 1 lần dùng mãi mãi
+            // 1. Mở kết nối Database
             new DAO(); 
             
-            // 2. Mở cổng 5555 để lắng nghe
+            // 2. Mở cổng 5555
             ServerSocket serverSocket = new ServerSocket(port);
             System.out.println("Server dang chay tai cong " + port + "...");
             
-            // 3. Vòng lặp vô tận để liên tục nhận khách
+            // 3. Vòng lặp nhận khách
             while(true) {
-                // Lệnh này sẽ TREO máy ở đây để chờ Client kết nối
                 Socket clientSocket = serverSocket.accept();
-                
                 System.out.println("Co nguoi ket noi: " + clientSocket.getInetAddress());
                 
-                // 4. Tạo một luồng riêng (ServerThread) để phục vụ người này
+                // Tạo luồng phục vụ
                 ServerThread serverThread = new ServerThread(clientSocket);
+                
+                // --- MỚI: Thêm nhân viên này vào danh sách quản lý ---
+                listServerThreads.add(serverThread);
+                
                 serverThread.start();
             }
             
         } catch (Exception e) { e.printStackTrace(); }
     }
     
+    // --- MỚI: Hàm thông báo danh sách Online cho tất cả mọi người ---
+    public static void notifyAllPlayers() {
+        String msg = "ONLINE_LIST";
+        
+        // Bước 1: Gom tên của những người đã đăng nhập
+        for (ServerThread th : listServerThreads) {
+            // Chỉ lấy những ai đã có Nickname (đã Login thành công)
+            if (th.getClientName() != null) {
+                msg += "|" + th.getClientName();
+            }
+        }
+        
+        // Bước 2: Gửi danh sách này cho tất cả mọi người
+        for (ServerThread th : listServerThreads) {
+            if (th.getClientName() != null) {
+                th.write(msg); // Gọi hàm gửi tin nhắn bên ServerThread
+            }
+        }
+        System.out.println("Server broadcast: " + msg);
+    }
+    
     public static void main(String[] args) {
-        // Chạy hàm main để khởi động Server
         new ServerControl();
+    }
+    public static ServerThread getServerThreadByName(String name) {
+        for (ServerThread th : listServerThreads) {
+            if (th.getClientName() != null && th.getClientName().equals(name)) {
+                return th;
+            }
+        }
+        return null; // Không tìm thấy (có thể nó vừa thoát)
     }
 }

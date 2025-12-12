@@ -24,56 +24,45 @@ public class DAO {
         }
     }
     
-    // --- HÀM CHECK LOGIN (Chuyển từ ServerThread sang đây) ---
-    public boolean checkLogin(String username, String password) {
+    public boolean register(String username, String password, String nickname) {
         try {
-            // Đảm bảo kết nối
             if (con == null || con.isClosed()) new DAO();
-            
+
+            // Check trùng username
+            String sqlCheck = "SELECT * FROM user WHERE Username = ?";
+            PreparedStatement psCheck = con.prepareStatement(sqlCheck);
+            psCheck.setString(1, username);
+            if (psCheck.executeQuery().next()) {
+                return false; // Đã tồn tại user
+            }
+
+            // INSERT thêm cột Nickname
+            String sqlInsert = "INSERT INTO user (Username, Password, Nickname) VALUES (?, ?, ?)";
+            PreparedStatement psInsert = con.prepareStatement(sqlInsert);
+            psInsert.setString(1, username);
+            psInsert.setString(2, password);
+            psInsert.setString(3, nickname); // <--- THÊM DÒNG NÀY
+
+            return psInsert.executeUpdate() > 0;
+
+        } catch (Exception e) { e.printStackTrace(); }
+        return false;
+    }
+
+    public String checkLogin(String username, String password) {
+        try {
+            if (con == null || con.isClosed()) new DAO();
             String sql = "SELECT * FROM user WHERE Username = ? AND Password = ?";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, username);
             ps.setString(2, password);
-            
+
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return true; // Tìm thấy user
+                // Trả về Nickname để hiển thị
+                return rs.getString("Nickname"); 
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false; // Không tìm thấy hoặc lỗi
-    }
-    public boolean register(String username, String password) {
-        try {
-            if (con == null || con.isClosed()) new DAO();
-            
-            // 1. Kiểm tra xem user đã tồn tại chưa
-            String sqlCheck = "SELECT * FROM user WHERE Username = ?";
-            PreparedStatement psCheck = con.prepareStatement(sqlCheck);
-            psCheck.setString(1, username);
-            
-            ResultSet rs = psCheck.executeQuery();
-            if (rs.next()) {
-                // Đã tồn tại -> Không cho đăng ký
-                System.out.println("User " + username + " da ton tai!");
-                return false; 
-            }
-            
-            // 2. Nếu chưa tồn tại -> Thêm mới
-            // Các cột Score, Win... đã để Default 0 trong SQL nên không cần Insert
-            String sqlInsert = "INSERT INTO user (Username, Password) VALUES (?, ?)";
-            PreparedStatement psInsert = con.prepareStatement(sqlInsert);
-            psInsert.setString(1, username);
-            psInsert.setString(2, password);
-            
-            // executeUpdate trả về số dòng thay đổi (>0 là thành công)
-            int rows = psInsert.executeUpdate();
-            return rows > 0;
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
     }
 }
