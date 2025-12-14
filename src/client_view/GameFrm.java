@@ -5,7 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.DataOutputStream; // Import thêm cái này để gửi tin
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Vector;
@@ -14,7 +14,7 @@ public class GameFrm extends JFrame {
     private Socket socket;
     private String username;
     
-    // Linh kiện danh sách
+    // UI Components
     private JList<String> listOnline;
     private DefaultListModel<String> listModel;
 
@@ -47,7 +47,7 @@ public class GameFrm extends JFrame {
         listOnline = new JList<>(listModel);
         listOnline.setFont(new Font("Arial", Font.PLAIN, 14));
         
-        // Sự kiện click đúp để thách đấu nhanh
+        // Click đúp để mời nhanh
         listOnline.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -78,14 +78,14 @@ public class GameFrm extends JFrame {
         btnTimTran.setFont(new Font("Arial", Font.PLAIN, 14));
         this.add(btnTimTran);
         
-        // --- NÚT THÁCH ĐẤU (ĐÃ CẬP NHẬT LOGIC) ---
+        // --- NÚT THÁCH ĐẤU ---
         JButton btnThachDau = new JButton("Thách Đấu");
         btnThachDau.setBounds(280, 200, 200, 40);
         btnThachDau.setFont(new Font("Arial", Font.PLAIN, 14));
         btnThachDau.addActionListener(e -> guiLoiMoi());
         this.add(btnThachDau);
         
-        // Nút Đăng Xuất
+        // NÚT ĐĂNG XUẤT
         JButton btnDangXuat = new JButton("Đăng Xuất");
         btnDangXuat.setBounds(280, 330, 200, 40);
         btnDangXuat.setBackground(Color.PINK);
@@ -102,7 +102,7 @@ public class GameFrm extends JFrame {
         this.setVisible(true);
     }
     
-    // --- HÀM GỬI LỜI MỜI (Tách riêng ra cho gọn) ---
+    // --- HÀM GỬI LỜI MỜI (ĐÃ SỬA) ---
     private void guiLoiMoi() {
         String userSelected = listOnline.getSelectedValue();
         
@@ -114,18 +114,19 @@ public class GameFrm extends JFrame {
         try {
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             
-            // Gửi lệnh: INVITE|Tên_Người_Bị_Mời
+            // Gửi lệnh: INVITE | Tên_Người_Bị_Mời
             out.writeUTF("INVITE|" + userSelected);
             out.flush();
             
-            JOptionPane.showMessageDialog(this, "Đã gửi lời mời tới " + userSelected + ".\nĐang chờ phản hồi...");
+            // --- QUAN TRỌNG: Đã xóa dòng hiện thông báo chờ ở đây ---
+            // Để tránh bị đè lên thông báo "Người chơi đang bận" từ Server
             
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Lỗi gửi lời mời!");
         }
     }
     
-    // Hàm cập nhật danh sách (Được gọi từ ClientListener)
+    // Cập nhật danh sách (Được gọi từ ClientListener)
     public void updateOnlineList(Vector<String> users) {
         listModel.clear();
         for (String u : users) {
@@ -134,6 +135,7 @@ public class GameFrm extends JFrame {
             }
         }
     }
+    
     public String getUsername() {
         return this.username;
     }

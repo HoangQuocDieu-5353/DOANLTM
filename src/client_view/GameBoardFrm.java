@@ -2,11 +2,13 @@ package client_view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.io.DataOutputStream;
 import java.net.Socket;
 
 public class GameBoardFrm extends JFrame {
     private Socket socket;
+    private GameFrm gameFrm; // Giữ tham chiếu tới sảnh chờ để back về
     private String myName;
     private String competitorName;
     
@@ -14,18 +16,33 @@ public class GameBoardFrm extends JFrame {
     private String mySide; // "X" hoặc "O"
     private boolean isMyTurn; 
     
-    // --- THÊM BIẾN TÍNH ĐIỂM ---
+    // --- BIẾN TÍNH ĐIỂM ---
     private int myScore = 0;
     private int competitorScore = 0;
-    private final int MAX_SCORE = 5; // Chạm 5 là thắng cả trận
+    private final int MAX_SCORE = 5; 
 
-    // UI Components
+    // --- BIẾN TIMER ---
+    private Timer turnTimer;
+    private int timeLeft = 30; // 30 giây suy nghĩ
+    
+    // --- UI Components ---
     private JButton[][] buttons = new JButton[20][20];
     private JLabel lblStatus;
-    private JLabel lblScore; // Hiển thị tỉ số
+    private JLabel lblScore; 
+    private JLabel lblTimer; 
+    
+    // --- CHAT COMPONENTS ---
+    private JTextArea txtChatArea;
+    private JTextField txtMessageInput;
+    private JButton btnSend;
+    
+    // --- NÚT ĐẦU HÀNG ---
+    private JButton btnSurrender;
 
-    public GameBoardFrm(Socket socket, String myName, String competitorName, String mySide) {
+    // --- CẬP NHẬT CONSTRUCTOR: THÊM GameFrm gameFrm ---
+    public GameBoardFrm(Socket socket, GameFrm gameFrm, String myName, String competitorName, String mySide) {
         this.socket = socket;
+        this.gameFrm = gameFrm; // Lưu lại sảnh chờ
         this.myName = myName;
         this.competitorName = competitorName;
         this.mySide = mySide;
@@ -34,41 +51,22 @@ public class GameBoardFrm extends JFrame {
         this.isMyTurn = mySide.equals("X");
         
         initUI();
+        initTimer(); 
+        
+        if (isMyTurn) {
+            startTurnTimer();
+        }
     }
 
     private void initUI() {
-        this.setTitle("Caro: " + myName + " vs " + competitorName);
-        this.setSize(850, 700); // Tăng size chút cho rộng
+        this.setTitle("Caro Online: " + myName + " vs " + competitorName);
+        this.setSize(1100, 750);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLayout(new BorderLayout());
 
-        // --- Panel Thông tin & Tỉ số ---
-        JPanel pnlInfo = new JPanel(new GridLayout(2, 1));
-        
-        // Dòng 1: Tên + Phe
-        JPanel pnlNames = new JPanel(new GridLayout(1, 2));
-        JLabel lblMe = new JLabel("Bạn: " + myName + " (" + mySide + ")");
-        lblMe.setFont(new Font("Arial", Font.BOLD, 15));
-        lblMe.setForeground(Color.BLUE);
-        pnlNames.add(lblMe);
-        
-        lblStatus = new JLabel(isMyTurn ? " -> ĐẾN LƯỢT BẠN" : " -> ĐỢI ĐỐI THỦ...");
-        lblStatus.setFont(new Font("Arial", Font.BOLD, 15));
-        lblStatus.setForeground(isMyTurn ? Color.RED : Color.BLACK);
-        pnlNames.add(lblStatus);
-        
-        // Dòng 2: Tỉ số
-        JPanel pnlScore = new JPanel(new FlowLayout());
-        lblScore = new JLabel("Tỉ số: 0 - 0");
-        lblScore.setFont(new Font("Arial", Font.BOLD, 20));
-        lblScore.setForeground(new Color(0, 100, 0)); // Màu xanh lá đậm
-        pnlScore.add(lblScore);
-
-        pnlInfo.add(pnlNames);
-        pnlInfo.add(pnlScore);
-        this.add(pnlInfo, BorderLayout.NORTH);
-
-        // --- Panel Bàn cờ ---
+        // ====================================================================
+        // 1. PANEL TRÁI: BÀN CỜ
+        // ====================================================================
         JPanel pnlBanCo = new JPanel(new GridLayout(20, 20));
         
         for (int i = 0; i < 20; i++) {
@@ -76,25 +74,21 @@ public class GameBoardFrm extends JFrame {
                 JButton btn = new JButton("");
                 btn.setBackground(Color.WHITE);
                 btn.setFocusable(false);
-                btn.setFont(new Font("Arial", Font.BOLD, 18));
+                btn.setFont(new Font("Arial", Font.BOLD, 16));
                 btn.setMargin(new Insets(0, 0, 0, 0));
                 
                 btn.putClientProperty("x", i);
                 btn.putClientProperty("y", j);
                 
-                // --- SỰ KIỆN CLICK ---
                 btn.addActionListener(e -> {
                     if (!isMyTurn || !btn.getText().equals("")) return; 
                     
-                    // 1. Đánh dấu
                     btn.setText(mySide);
                     btn.setForeground(mySide.equals("X") ? Color.RED : Color.BLUE);
                     
-                    // 2. Khóa lượt
                     isMyTurn = false;
-                    lblStatus.setText(" -> ĐỢI ĐỐI THỦ...");
-                    lblStatus.setForeground(Color.BLACK);
-                    this.setTitle("Đang chờ đối thủ...");
+                    updateStatus("Đang chờ đối thủ...");
+                    stopTurnTimer(); 
                     
                     try {
                         int x = (int) btn.getClientProperty("x");
@@ -103,7 +97,6 @@ public class GameBoardFrm extends JFrame {
                         out.writeUTF("CARO|" + x + "|" + y + "|" + competitorName); 
                         out.flush();
                         
-                        // 3. Check thắng thua (Luật mới)
                         if (checkWinStrict(x, y, mySide)) {
                             increaseMyScore();
                         }
@@ -116,130 +109,311 @@ public class GameBoardFrm extends JFrame {
             }
         }
         this.add(pnlBanCo, BorderLayout.CENTER);
+
+        // ====================================================================
+        // 2. PANEL PHẢI: THÔNG TIN + CHAT
+        // ====================================================================
+        JPanel pnlRight = new JPanel();
+        pnlRight.setLayout(new BorderLayout());
+        pnlRight.setPreferredSize(new Dimension(320, 0)); 
+        pnlRight.setBorder(BorderFactory.createMatteBorder(0, 2, 0, 0, Color.BLACK)); 
+
+        // --- A. Thông tin ---
+        JPanel pnlInfo = new JPanel(new GridLayout(5, 1, 5, 5));
+        pnlInfo.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        pnlInfo.setBackground(new Color(240, 240, 240));
+
+        JLabel lblMe = new JLabel("Bạn: " + myName + " (" + mySide + ")");
+        lblMe.setFont(new Font("Arial", Font.BOLD, 15));
+        lblMe.setForeground(Color.BLUE);
+        
+        JLabel lblCompetitor = new JLabel("Đối thủ: " + competitorName);
+        lblCompetitor.setFont(new Font("Arial", Font.BOLD, 14));
+
+        lblStatus = new JLabel(isMyTurn ? "ĐẾN LƯỢT BẠN" : "Đợi đối thủ...");
+        lblStatus.setFont(new Font("Arial", Font.BOLD, 14));
+        lblStatus.setForeground(isMyTurn ? Color.RED : Color.BLACK);
+        
+        lblScore = new JLabel("Tỉ số: 0 - 0");
+        lblScore.setFont(new Font("Arial", Font.BOLD, 18));
+        lblScore.setForeground(new Color(0, 100, 0)); 
+        
+        lblTimer = new JLabel("Thời gian: 30s");
+        lblTimer.setFont(new Font("Arial", Font.BOLD, 22));
+        lblTimer.setForeground(Color.RED);
+        
+        pnlInfo.add(lblMe);
+        pnlInfo.add(lblCompetitor);
+        pnlInfo.add(lblStatus);
+        pnlInfo.add(lblScore);
+        pnlInfo.add(lblTimer);
+        
+        pnlRight.add(pnlInfo, BorderLayout.NORTH);
+
+        // --- B. Chat ---
+        JPanel pnlChat = new JPanel(new BorderLayout());
+        pnlChat.setBorder(BorderFactory.createTitledBorder("Trò chuyện"));
+        
+        txtChatArea = new JTextArea();
+        txtChatArea.setEditable(false);
+        txtChatArea.setLineWrap(true);
+        txtChatArea.setWrapStyleWord(true);
+        JScrollPane scrollChat = new JScrollPane(txtChatArea);
+        pnlChat.add(scrollChat, BorderLayout.CENTER);
+        
+        // --- C. Input + Đầu Hàng ---
+        JPanel pnlSouth = new JPanel(new BorderLayout());
+        
+        JPanel pnlInput = new JPanel(new BorderLayout());
+        txtMessageInput = new JTextField();
+        btnSend = new JButton("Gửi");
+        ActionListener sendAction = e -> sendMessage();
+        btnSend.addActionListener(sendAction);
+        txtMessageInput.addActionListener(sendAction); 
+        pnlInput.add(txtMessageInput, BorderLayout.CENTER);
+        pnlInput.add(btnSend, BorderLayout.EAST);
+        
+        btnSurrender = new JButton("ĐẦU HÀNG");
+        btnSurrender.setBackground(Color.RED);
+        btnSurrender.setForeground(Color.WHITE);
+        btnSurrender.setFont(new Font("Arial", Font.BOLD, 18));
+        btnSurrender.setFocusable(false);
+        btnSurrender.setPreferredSize(new Dimension(0, 50)); 
+        
+        btnSurrender.addActionListener(e -> surrender());
+        
+        pnlSouth.add(pnlInput, BorderLayout.NORTH);
+        pnlSouth.add(Box.createVerticalStrut(10), BorderLayout.CENTER); 
+        pnlSouth.add(btnSurrender, BorderLayout.SOUTH);
+        pnlSouth.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        pnlChat.add(pnlSouth, BorderLayout.SOUTH);
+        pnlRight.add(pnlChat, BorderLayout.CENTER);
+        
+        this.add(pnlRight, BorderLayout.EAST);
         this.setVisible(true); 
     }
     
-    // --- XỬ LÝ KHI ĐỐI THỦ ĐÁNH ---
+    // ========================================================================
+    // --- XỬ LÝ ĐẦU HÀNG ---
+    // ========================================================================
+    private void surrender() {
+        int confirm = JOptionPane.showConfirmDialog(this, 
+                "Bạn có chắc chắn muốn đầu hàng không?\nBạn sẽ bị xử thua ván này.", 
+                "Xác nhận đầu hàng", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Gửi lệnh lên Server và CHỜ KẾT QUẢ (Không tự đóng nữa)
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                out.writeUTF("SURRENDER|" + competitorName);
+                out.flush();
+                
+                // Dừng timer để đỡ chạy ngầm
+                turnTimer.stop();
+                disableBoard();
+                
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
+
+    // ========================================================================
+    // --- HÀM HIỂN THỊ KẾT QUẢ (Được gọi từ ClientListener) ---
+    // ========================================================================
+    public void showResultDialog(String winner, int winnerScore, String loser, int loserScore) {
+        boolean isWin = myName.equals(winner);
+        
+        String title = isWin ? "CHIẾN THẮNG!" : "THẤT BẠI!";
+        String message;
+        int type;
+        
+        if (isWin) {
+            message = "Chúc mừng! Bạn đã giành chiến thắng.\n" +
+                      "Điểm cộng: +10\n" +
+                      "Tổng điểm hiện tại: " + winnerScore;
+            type = JOptionPane.INFORMATION_MESSAGE;
+        } else {
+            message = "Rất tiếc! Bạn đã để thua ván này.\n" +
+                      "Tổng điểm hiện tại: " + loserScore;
+            type = JOptionPane.ERROR_MESSAGE;
+        }
+
+        Object[] options = {"Chơi lại", "Về màn hình chính"};
+        int choice = JOptionPane.showOptionDialog(this,
+                message + "\n\nBạn có muốn chơi lại với đối thủ này không?",
+                title,
+                JOptionPane.YES_NO_OPTION,
+                type,
+                null,
+                options,
+                options[0]);
+
+        if (choice == 0) { // Chọn Chơi lại
+            try {
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                out.writeUTF("REMATCH_REQUEST|" + competitorName);
+                out.flush();
+                JOptionPane.showMessageDialog(this, "Đang chờ đối thủ đồng ý...");
+            } catch (Exception e) { e.printStackTrace(); }
+        } else { // Chọn Về sảnh
+            this.dispose();
+            gameFrm.setVisible(true); // Mở lại sảnh chờ
+        }
+    }
+
+    // ========================================================================
+    // --- CÁC HÀM XỬ LÝ CHAT & TIMER (GIỮ NGUYÊN) ---
+    // ========================================================================
+    private void sendMessage() {
+        String msg = txtMessageInput.getText().trim();
+        if (msg.isEmpty()) return;
+        try {
+            addMessage("Bạn: " + msg);
+            txtMessageInput.setText("");
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            out.writeUTF("CHAT|" + msg + "|" + competitorName);
+            out.flush();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+    
+    public void addMessage(String msg) {
+        txtChatArea.append(msg + "\n");
+        txtChatArea.setCaretPosition(txtChatArea.getDocument().getLength()); 
+    }
+
+    private void initTimer() {
+        turnTimer = new Timer(1000, e -> {
+            if (!isMyTurn) return; 
+            timeLeft--;
+            lblTimer.setText("Thời gian: " + timeLeft + "s");
+            if (timeLeft <= 10) lblTimer.setForeground(Color.RED);
+            else lblTimer.setForeground(Color.BLUE);
+            if (timeLeft <= 0) {
+                turnTimer.stop();
+                JOptionPane.showMessageDialog(this, "Hết giờ! Bạn bị mất lượt.");
+                try {
+                    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                    out.writeUTF("TIMEOUT|" + competitorName);
+                    out.flush();
+                } catch (Exception ex) {}
+                isMyTurn = false;
+                updateStatus("Đang chờ đối thủ...");
+            }
+        });
+    }
+
+    public void startTurnTimer() {
+        timeLeft = 30; 
+        lblTimer.setText("Thời gian: 30s");
+        lblTimer.setForeground(Color.BLUE);
+        turnTimer.start();
+    }
+    
+    public void stopTurnTimer() {
+        turnTimer.stop();
+        lblTimer.setText("Thời gian: --");
+    }
+    
+    public void handleCompetitorTimeout() {
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(this, "Đối thủ đã hết giờ! Đến lượt bạn.");
+            isMyTurn = true;
+            updateStatus("ĐẾN LƯỢT BẠN");
+            startTurnTimer(); 
+        });
+    }
+
+    private void updateStatus(String status) {
+        lblStatus.setText(status);
+        lblStatus.setForeground(isMyTurn ? Color.RED : Color.BLACK);
+    }
+
+    // ========================================================================
+    // --- LOGIC GAME & TÍNH ĐIỂM (CẬP NHẬT) ---
+    // ========================================================================
     public void addCompetitorMove(int x, int y) {
         SwingUtilities.invokeLater(() -> {
             String competitorSide = mySide.equals("X") ? "O" : "X";
-            
             if(x >= 0 && x < 20 && y >= 0 && y < 20) {
                 buttons[x][y].setText(competitorSide);
                 buttons[x][y].setForeground(competitorSide.equals("X") ? Color.RED : Color.BLUE);
                 
-                // Check xem đối thủ có thắng không
                 if (checkWinStrict(x, y, competitorSide)) {
                     increaseCompetitorScore();
-                    return; // Dừng, không mở khóa lượt nữa
+                    return; 
                 }
                 
                 isMyTurn = true;
-                lblStatus.setText(" -> ĐẾN LƯỢT BẠN");
-                lblStatus.setForeground(Color.RED);
+                updateStatus("ĐẾN LƯỢT BẠN");
+                startTurnTimer(); 
                 this.setTitle("Đến lượt bạn đánh!");
             }
         });
     }
 
-    // ========================================================================
-    // --- THUẬT TOÁN CHECK WIN: 5 QUÂN, KHÔNG BỊ CHẶN 2 ĐẦU ---
-    // ========================================================================
-    private boolean checkWinStrict(int x, int y, String value) {
-        int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {1, -1}}; // Ngang, Dọc, Chéo chính, Chéo phụ
-
+    private boolean checkWinStrict(int x, int y, String value) { 
+        int[][] directions = {{0, 1}, {1, 0}, {1, 1}, {1, -1}}; 
         for (int[] dir : directions) {
-            int dx = dir[0];
-            int dy = dir[1];
-
-            // 1. Đếm số quân liên tiếp về 2 phía
-            int count = 1; // Tính cả quân vừa đánh
-            
-            // Đếm về phía dương (Positive direction)
-            int i = 1;
+            int dx = dir[0]; int dy = dir[1];
+            int count = 1; int i = 1;
             while (true) {
-                int nx = x + i * dx;
-                int ny = y + i * dy;
-                if (nx < 0 || nx >= 20 || ny < 0 || ny >= 20 || !buttons[nx][ny].getText().equals(value)) {
-                    break;
-                }
-                count++;
-                i++;
+                int nx = x + i * dx; int ny = y + i * dy;
+                if (nx < 0 || nx >= 20 || ny < 0 || ny >= 20 || !buttons[nx][ny].getText().equals(value)) break;
+                count++; i++;
             }
-            // Lưu lại vị trí chặn đầu này để check block
-            int headX = x + i * dx;
-            int headY = y + i * dy;
-
-            // Đếm về phía âm (Negative direction)
+            int headX = x + i * dx; int headY = y + i * dy;
             int j = 1;
             while (true) {
-                int nx = x - j * dx;
-                int ny = y - j * dy;
-                if (nx < 0 || nx >= 20 || ny < 0 || ny >= 20 || !buttons[nx][ny].getText().equals(value)) {
-                    break;
-                }
-                count++;
-                j++;
+                int nx = x - j * dx; int ny = y - j * dy;
+                if (nx < 0 || nx >= 20 || ny < 0 || ny >= 20 || !buttons[nx][ny].getText().equals(value)) break;
+                count++; j++;
             }
-            // Lưu lại vị trí chặn đuôi này
-            int tailX = x - j * dx;
-            int tailY = y - j * dy;
-
-            // --- LUẬT: CHÍNH XÁC 5 QUÂN VÀ KHÔNG BỊ CHẶN 2 ĐẦU ---
-            if (count == 5) { // Nếu đúng 5 quân (4 hoặc 6 không tính)
+            int tailX = x - j * dx; int tailY = y - j * dy;
+            if (count == 5) { 
                 boolean headBlocked = isBlocked(headX, headY, value);
                 boolean tailBlocked = isBlocked(tailX, tailY, value);
-
-                // Nếu KHÔNG bị chặn cả 2 đầu thì mới thắng
-                if (!(headBlocked && tailBlocked)) {
-                    return true;
-                }
+                if (!(headBlocked && tailBlocked)) return true;
             }
         }
         return false;
     }
 
-    // Hàm kiểm tra xem ô đó có phải là "Vật cản" không
-    // Vật cản = Hết bàn cờ HOẶC Quân của đối thủ
     private boolean isBlocked(int x, int y, String myValue) {
-        // Ra khỏi bàn cờ coi như bị chặn
-        if (x < 0 || x >= 20 || y < 0 || y >= 20) {
-            return true;
-        }
+        if (x < 0 || x >= 20 || y < 0 || y >= 20) return true;
         String cellValue = buttons[x][y].getText();
-        // Nếu ô đó trống -> Không chặn
         if (cellValue.equals("")) return false;
-        
-        // Nếu ô đó khác quân mình -> Chặn
         return !cellValue.equals(myValue);
     }
-
-    // ========================================================================
-    // --- XỬ LÝ ĐIỂM SỐ VÀ RESET VÁN ---
-    // ========================================================================
     
-    private void increaseMyScore() {
+    // --- SỬA LOGIC: CHỈ GỬI LỆNH, KHÔNG HIỆN DIALOG ---
+    public void increaseMyScore() {
         myScore++;
         updateScoreUI();
-        
         if (myScore >= MAX_SCORE) {
-            JOptionPane.showMessageDialog(this, "CHÚC MỪNG! BẠN ĐÃ CHIẾN THẮNG CHUNG CUỘC!");
-            disableBoard(); // Khóa game, hết trận
+            disableBoard();
+            stopTurnTimer();
+            try {
+                 // Gửi kết quả -> Chờ Server gửi GAME_RESULT về
+                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                 out.writeUTF("GAME_OVER|" + myName + "|" + competitorName);
+                 out.flush();
+            } catch(Exception e){}
         } else {
-            JOptionPane.showMessageDialog(this, "Bạn thắng ván này! Tỉ số: " + myScore + " - " + competitorScore + "\nBắt đầu ván mới!");
-            resetBoard(); // Reset bàn cờ chơi ván tiếp
+            JOptionPane.showMessageDialog(this, "Bạn thắng ván này! Tỉ số: " + myScore + " - " + competitorScore);
+            resetBoard();
         }
     }
 
+    // --- SỬA LOGIC: KHÔNG LÀM GÌ, CHỜ GAME_RESULT ---
     private void increaseCompetitorScore() {
         competitorScore++;
         updateScoreUI();
-        
         if (competitorScore >= MAX_SCORE) {
-            JOptionPane.showMessageDialog(this, "THẤT BẠI! ĐỐI THỦ ĐÃ THẮNG CHUNG CUỘC!");
             disableBoard();
+            stopTurnTimer();
+            // Đợi lệnh GAME_RESULT từ Server
         } else {
-            JOptionPane.showMessageDialog(this, "Bạn thua ván này! Tỉ số: " + myScore + " - " + competitorScore + "\nBắt đầu ván mới!");
+            JOptionPane.showMessageDialog(this, "Bạn thua ván này! Tỉ số: " + myScore + " - " + competitorScore);
             resetBoard();
         }
     }
@@ -248,24 +422,16 @@ public class GameBoardFrm extends JFrame {
         lblScore.setText("Tỉ số: " + myScore + " - " + competitorScore);
     }
     
-    // Hàm xóa bàn cờ để chơi ván mới
     private void resetBoard() {
-        // Xóa hết quân cờ
         for (int i = 0; i < 20; i++) {
             for (int j = 0; j < 20; j++) {
                 buttons[i][j].setText("");
                 buttons[i][j].setEnabled(true);
             }
         }
-        
-        // Reset lượt đi: Theo luật thông thường thì người thua đi trước hoặc X đi trước.
-        // Để đơn giản, ta giữ nguyên quy tắc ban đầu: X luôn đi trước
         isMyTurn = mySide.equals("X");
-        
-        // Cập nhật lại label thông báo
-        lblStatus.setText(isMyTurn ? " -> ĐẾN LƯỢT BẠN" : " -> ĐỢI ĐỐI THỦ...");
-        lblStatus.setForeground(isMyTurn ? Color.RED : Color.BLACK);
-        this.setTitle("Caro: " + myName + " vs " + competitorName);
+        updateStatus(isMyTurn ? "ĐẾN LƯỢT BẠN" : "Đợi đối thủ...");
+        if(isMyTurn) startTurnTimer(); else stopTurnTimer();
     }
 
     private void disableBoard() {

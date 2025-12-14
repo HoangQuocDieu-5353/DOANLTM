@@ -16,14 +16,17 @@ import server_dao.DAO;
 public class ServerControl {
     private int port = 5555;
     
-    // --- MỚI: Danh sách chứa tất cả các luồng nhân viên đang chạy ---
-    // Dùng static để các file khác (như ServerThread) có thể gọi được
+    // Danh sách chứa tất cả các luồng nhân viên đang chạy
     public static Vector<ServerThread> listServerThreads = new Vector<>();
     
     public ServerControl() {
         try {
-            // 1. Mở kết nối Database
-            new DAO(); 
+            // --- CẬP NHẬT MỚI Ở ĐÂY ---
+            // 1. Reset trạng thái DB trước khi nhận khách
+            // Để đảm bảo không ai bị kẹt Online khi Server vừa khởi động lại
+            new DAO().resetAllStatus();
+            System.out.println("Da reset toan bo trang thai User trong Database ve Offline!");
+            // ---------------------------
             
             // 2. Mở cổng 5555
             ServerSocket serverSocket = new ServerSocket(port);
@@ -37,7 +40,7 @@ public class ServerControl {
                 // Tạo luồng phục vụ
                 ServerThread serverThread = new ServerThread(clientSocket);
                 
-                // --- MỚI: Thêm nhân viên này vào danh sách quản lý ---
+                // Thêm nhân viên này vào danh sách quản lý
                 listServerThreads.add(serverThread);
                 
                 serverThread.start();
@@ -46,13 +49,12 @@ public class ServerControl {
         } catch (Exception e) { e.printStackTrace(); }
     }
     
-    // --- MỚI: Hàm thông báo danh sách Online cho tất cả mọi người ---
+    // Hàm thông báo danh sách Online cho tất cả mọi người
     public static void notifyAllPlayers() {
         String msg = "ONLINE_LIST";
         
         // Bước 1: Gom tên của những người đã đăng nhập
         for (ServerThread th : listServerThreads) {
-            // Chỉ lấy những ai đã có Nickname (đã Login thành công)
             if (th.getClientName() != null) {
                 msg += "|" + th.getClientName();
             }
@@ -61,7 +63,7 @@ public class ServerControl {
         // Bước 2: Gửi danh sách này cho tất cả mọi người
         for (ServerThread th : listServerThreads) {
             if (th.getClientName() != null) {
-                th.write(msg); // Gọi hàm gửi tin nhắn bên ServerThread
+                th.write(msg); 
             }
         }
         System.out.println("Server broadcast: " + msg);
@@ -70,12 +72,13 @@ public class ServerControl {
     public static void main(String[] args) {
         new ServerControl();
     }
+    
     public static ServerThread getServerThreadByName(String name) {
         for (ServerThread th : listServerThreads) {
             if (th.getClientName() != null && th.getClientName().equals(name)) {
                 return th;
             }
         }
-        return null; // Không tìm thấy (có thể nó vừa thoát)
+        return null; 
     }
 }

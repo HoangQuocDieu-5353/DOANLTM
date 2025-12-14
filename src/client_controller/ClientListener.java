@@ -1,20 +1,22 @@
 package client_controller;
 
 import client_view.GameFrm;
-import client_view.GameBoardFrm; // Import thêm cái này để dùng GameBoardFrm
+import client_view.GameBoardFrm;
+import client_view.PlayerProfileFrm; 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Vector;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 public class ClientListener extends Thread {
     private Socket socket;
     private DataInputStream in;
     private GameFrm gameFrm;
     
-    // --- THÊM BIẾN NÀY ĐỂ QUẢN LÝ BÀN CỜ ---
+    // Quản lý bàn cờ
     private GameBoardFrm gameBoard; 
 
     // Constructor
@@ -40,7 +42,7 @@ public class ClientListener extends Thread {
                 String[] data = message.split("\\|");
                 String command = data[0];
 
-                // --- 1. CẬP NHẬT DANH SÁCH ONLINE ---
+                // --- CẬP NHẬT DANH SÁCH ONLINE ---
                 if (command.equals("ONLINE_LIST")) {
                     Vector<String> onlineUsers = new Vector<>();
                     for (int i = 1; i < data.length; i++) {
@@ -49,7 +51,7 @@ public class ClientListener extends Thread {
                     gameFrm.updateOnlineList(onlineUsers);
                 }
                 
-                // --- 2. XỬ LÝ LỜI MỜI THÁCH ĐẤU ---
+                // --- XỬ LÝ LỜI MỜI THÁCH ĐẤU ---
                 else if (command.equals("INVITE_REQUEST")) {
                     String inviter = data[1];
                     int confirm = JOptionPane.showConfirmDialog(gameFrm, 
@@ -67,9 +69,8 @@ public class ClientListener extends Thread {
                     }
                 }
                 
-                // --- 3. BẮT ĐẦU GAME (Vào bàn cờ) ---
+                // --- BẮT ĐẦU GAME ---
                 else if (command.equals("START_GAME")) {
-                    // Cấu trúc: START_GAME | Tên_Đối_Thủ | Side(X/O)
                     String rivalName = data[1];
                     String side = data[2]; 
                     
@@ -78,40 +79,129 @@ public class ClientListener extends Thread {
                     // Ẩn sảnh chờ
                     gameFrm.setVisible(false); 
                     
-                    // Khởi tạo bàn cờ và gán vào biến toàn cục 'gameBoard'
-                    // Lưu ý: Đảm bảo GameFrm có hàm getUsername() nhé
-                    this.gameBoard = new GameBoardFrm(socket, gameFrm.getUsername(), rivalName, side);
-                    this.gameBoard.setVisible(true); // Hiển thị bàn cờ lên
+                    // Nếu đang mở bàn cờ cũ (do chơi lại) thì đóng đi
+                    if (this.gameBoard != null) {
+                        this.gameBoard.dispose();
+                    }
+
+                    // Mở bàn cờ mới
+                    this.gameBoard = new GameBoardFrm(socket, gameFrm, gameFrm.getUsername(), rivalName, side);
+                    this.gameBoard.setVisible(true); 
                 }
                 
-                // --- 4. NHẬN NƯỚC ĐI TỪ ĐỐI THỦ ---
+                // --- NHẬN NƯỚC ĐI TỪ ĐỐI THỦ ---
                 else if (command.equals("CARO")) {
-                    // Cấu trúc: CARO | x | y
                     int x = Integer.parseInt(data[1]);
                     int y = Integer.parseInt(data[2]);
                     
-                    // Nếu bàn cờ đang mở thì cập nhật nước đi
                     if (this.gameBoard != null) {
                         this.gameBoard.addCompetitorMove(x, y);
-                    } else {
-                        System.out.println("Lỗi: Nhận được nước đi nhưng bàn cờ chưa mở!");
                     }
                 }
                 
-                // --- 5. ĐỐI THỦ THOÁT GAME (Xử lý thêm cho mượt) ---
+                // --- CHAT TRONG GAME ---
+                else if (command.equals("CHAT")) {
+                    String content = data[1];
+                    if (gameBoard != null) {
+                        gameBoard.addMessage("Đối thủ: " + content);
+                    }
+                }
+
+                // --- ĐỐI THỦ HẾT GIỜ (TIMEOUT) ---
+                else if (command.equals("TIMEOUT")) {
+                    if (gameBoard != null) {
+                        gameBoard.handleCompetitorTimeout();
+                    }
+                }
+                
+                // --- ĐỐI THỦ THOÁT GAME ĐỘT NGỘT (EXIT_GAME) ---
                 else if (command.equals("EXIT_GAME")) {
                     if (this.gameBoard != null) {
                         JOptionPane.showMessageDialog(this.gameBoard, "Đối thủ đã thoát game!");
-                        this.gameBoard.dispose(); // Tắt bàn cờ
-                        this.gameBoard = null;    // Reset biến
-                        gameFrm.setVisible(true); // Hiện lại sảnh chờ
+                        this.gameBoard.dispose(); 
+                        this.gameBoard = null;    
+                        gameFrm.setVisible(true); 
                     }
                 }
+                
+                // ============================================================
+                // --- CÁC TÍNH NĂNG MỚI CẬP NHẬT ---
+                // ============================================================
+                
+                // --- 1. NHẬN CẢNH BÁO (WARN) ---
+                else if (command.equals("WARN")) {
+                    String msg = data[1];
+                    JOptionPane.showMessageDialog(gameFrm, msg, "Thông báo", JOptionPane.WARNING_MESSAGE);
+                }
+
+                // --- 2. NHẬN KẾT QUẢ TRẬN ĐẤU (GAME_RESULT) ---
+                // Thay thế cho COMPETITOR_QUIT để hiển thị điểm số
+                else if (command.equals("GAME_RESULT")) {
+                    String winner = data[1];
+                    int winnerScore = Integer.parseInt(data[2]);
+                    String loser = data[3];
+                    int loserScore = Integer.parseInt(data[4]);
+                    
+                    SwingUtilities.invokeLater(() -> {
+                        if (gameBoard != null) {
+                            // Gọi hàm hiển thị Dialog kết quả xịn xò bên GameBoard
+                            gameBoard.showResultDialog(winner, winnerScore, loser, loserScore);
+                        }
+                    });
+                }
+                
+                // --- 3. XỬ LÝ YÊU CẦU CHƠI LẠI (REMATCH) ---
+                else if (command.equals("REMATCH_REQUEST")) {
+                    String inviter = data[1];
+                    SwingUtilities.invokeLater(() -> {
+                        int confirm = JOptionPane.showConfirmDialog(gameBoard, 
+                            "Đối thủ " + inviter + " muốn chơi lại ván nữa!\nBạn có đồng ý không?", 
+                            "Yêu cầu đấu lại", JOptionPane.YES_NO_OPTION);
+                        
+                        try {
+                            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                            if (confirm == JOptionPane.YES_OPTION) {
+                                out.writeUTF("REMATCH_ACCEPT|" + inviter);
+                            } else {
+                                out.writeUTF("REMATCH_REFUSE|" + inviter);
+                                // Từ chối xong thì mình về sảnh
+                                if (gameBoard != null) {
+                                    gameBoard.dispose();
+                                    gameBoard = null;
+                                }
+                                gameFrm.setVisible(true);
+                            }
+                            out.flush();
+                        } catch (Exception e) {}
+                    });
+                }
+                
+                // --- 4. KHI ĐỐI THỦ TỪ CHỐI CHƠI LẠI ---
+                else if (command.equals("REMATCH_REFUSE")) {
+                    JOptionPane.showMessageDialog(gameBoard, "Đối thủ đã từ chối chơi lại!");
+                    if (gameBoard != null) {
+                        gameBoard.dispose();
+                        gameBoard = null;
+                    }
+                    gameFrm.setVisible(true);
+                }
+                
+                // --- 5. XEM THÔNG TIN PROFILE (RETURN_INFO) ---
+                else if (command.equals("RETURN_INFO")) {
+                    int win = Integer.parseInt(data[1]);
+                    int lose = Integer.parseInt(data[2]);
+                    int draw = Integer.parseInt(data[3]);
+                    int score = Integer.parseInt(data[4]);
+                    String username = data[5];
+                    
+                    new PlayerProfileFrm(username, win, lose, draw, score);
+                }
+                
             }
         } catch (IOException e) {
             System.out.println("Mất kết nối tới Server!");
-            // e.printStackTrace(); // Tắt cái này cho đỡ rác console nếu muốn
-            JOptionPane.showMessageDialog(gameFrm, "Mất kết nối tới Server. Vui lòng kiểm tra lại.");
+            // Tránh spam dialog khi tắt client
+            // JOptionPane.showMessageDialog(gameFrm, "Mất kết nối tới Server."); 
         }
     }
 }
