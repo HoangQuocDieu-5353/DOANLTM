@@ -4,13 +4,20 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/C:/DOANLTM/GameCaro/src/client_view/GameFrm.java</file>
-            <file>file:/C:/DOANLTM/GameCaro/src/client_view/LoginUI.java</file>
-            <file>file:/C:/DOANLTM/GameCaro/src/client_view/GameBoardFrm.java</file>
-            <file>file:/C:/DOANLTM/GameCaro/src/server_dao/DAO.java</file>
-            <file>file:/C:/DOANLTM/GameCaro/src/client_view/RegisterFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/PrivateChatFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/server_controller/Room.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/RankFrm.java</file>
             <file>file:/C:/DOANLTM/GameCaro/src/server_controller/ServerControl.java</file>
             <file>file:/C:/DOANLTM/GameCaro/src/server_controller/ServerThread.java</file>
             <file>file:/C:/DOANLTM/GameCaro/src/client_controller/ClientListener.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/RoomListFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/LoginUI.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/GameBoardFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/WaitingRoomFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/server_dao/DAO.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/RegisterFrm.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_controller/AI.java</file>
+            <file>file:/C:/DOANLTM/GameCaro/src/client_view/PlayerProfileFrm.java</file>
         </group>
     </open-files>
 </project-private>

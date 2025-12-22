@@ -4,16 +4,21 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+
+// --- [NEW] Import thư viện SSL ---
 import java.net.Socket;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 public class RegisterFrm extends JFrame {
     private JTextField txtUser;
+    private JTextField txtNickname; 
     private JPasswordField txtPass;
     private JButton btnRegister, btnLogin;
 
     public RegisterFrm() {
         this.setTitle("Đăng Ký Tài Khoản");
-        this.setSize(400, 300);
+        this.setSize(400, 350); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
         this.setLayout(null);
@@ -25,79 +30,94 @@ public class RegisterFrm extends JFrame {
         lblTitle.setBounds(150, 20, 100, 30);
         this.add(lblTitle);
 
-        // User
+        // --- 1. User (Tài khoản) ---
         JLabel lblUser = new JLabel("Tài khoản:");
-        lblUser.setBounds(50, 80, 80, 25);
+        lblUser.setBounds(50, 70, 80, 25);
         this.add(lblUser);
         txtUser = new JTextField();
-        txtUser.setBounds(130, 80, 200, 25);
+        txtUser.setBounds(130, 70, 200, 25);
         this.add(txtUser);
 
-        // Pass
+        // --- 2. Nickname (Tên hiển thị) ---
+        JLabel lblNick = new JLabel("Nickname:");
+        lblNick.setBounds(50, 110, 80, 25);
+        this.add(lblNick);
+        txtNickname = new JTextField();
+        txtNickname.setBounds(130, 110, 200, 25);
+        this.add(txtNickname);
+
+        // --- 3. Pass (Mật khẩu) ---
         JLabel lblPass = new JLabel("Mật khẩu:");
-        lblPass.setBounds(50, 120, 80, 25);
+        lblPass.setBounds(50, 150, 80, 25);
         this.add(lblPass);
         txtPass = new JPasswordField();
-        txtPass.setBounds(130, 120, 200, 25);
+        txtPass.setBounds(130, 150, 200, 25);
         this.add(txtPass);
 
-        // Button Register
+        // --- 4. Các nút bấm ---
         btnRegister = new JButton("Đăng Ký");
-        btnRegister.setBounds(130, 170, 90, 30);
+        btnRegister.setBounds(130, 200, 90, 30);
         this.add(btnRegister);
 
-        // Button Back to Login
-        btnLogin = new JButton("Đã có tài khoản");
-        btnLogin.setBounds(230, 170, 100, 30);
+        btnLogin = new JButton("Về đăng nhập");
+        btnLogin.setBounds(230, 200, 110, 30);
         this.add(btnLogin);
 
-        
-        // 1. Bấm nút Đăng Ký
+        // --- SỰ KIỆN ---
         btnRegister.addActionListener(e -> xuLyDangKy());
 
-        // 2. Bấm nút Quay lại đăng nhập
         btnLogin.addActionListener(e -> {
             this.dispose();
-            new LoginUI(); // Mở lại màn hình Login
+            new LoginUI(); 
         });
 
         this.setVisible(true);
     }
 
+    // --- [UPDATE] DÙNG SSL ĐỂ ĐĂNG KÝ ---
     private void xuLyDangKy() {
         try {
-            String user = txtUser.getText();
-            String pass = new String(txtPass.getPassword());
+            String user = txtUser.getText().trim();
+            String nick = txtNickname.getText().trim(); 
+            String pass = new String(txtPass.getPassword()).trim();
 
-            if (user.isEmpty() || pass.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Không được để trống!");
+            if (user.isEmpty() || nick.isEmpty() || pass.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
                 return;
             }
 
-            // Kết nối Server (Nhớ sửa IP nếu chạy khác máy)
-            Socket socket = new Socket("localhost", 5555);
+            // 1. Cấu hình TrustStore (Để tin tưởng Server SSL)
+            System.setProperty("javax.net.ssl.trustStore", "carokeystore.jks");
+            System.setProperty("javax.net.ssl.trustStorePassword", "123456789");
+
+            // 2. Tạo kết nối SSL (Thay cho Socket thường)
+            SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            SSLSocket socket = (SSLSocket) sslFactory.createSocket("localhost", 5555); // Port 5555
+            
             DataInputStream in = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
-            // Gửi lệnh: REGISTER|user|pass
-            out.writeUTF("REGISTER|" + user + "|" + pass);
+            // 3. Gửi lệnh đăng ký
+            out.writeUTF("REGISTER|" + user + "|" + pass + "|" + nick);
             out.flush();
 
-            // Nhận phản hồi
+            // 4. Nhận phản hồi
             String response = in.readUTF();
             
             if (response.equals("REGISTER_OK")) {
                 JOptionPane.showMessageDialog(this, "Đăng ký thành công! Hãy đăng nhập.");
                 this.dispose();
-                new LoginUI(); // Chuyển về màn hình đăng nhập
-            } else {
+                new LoginUI(); 
+            } else if (response.equals("EXISTED")) {
                 JOptionPane.showMessageDialog(this, "Tài khoản đã tồn tại!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Đăng ký thất bại: " + response);
             }
             
-            socket.close(); // Đăng ký xong thì đóng kết nối luôn
+            socket.close(); 
             
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối Server!");
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối SSL: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

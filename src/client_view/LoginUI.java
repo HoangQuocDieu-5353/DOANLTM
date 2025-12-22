@@ -4,9 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.net.Socket;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+
+// --- [NEW] Import thư viện SSL ---
+import java.net.Socket;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 public class LoginUI extends JFrame implements ActionListener {
     // 1. Khai báo các linh kiện
@@ -22,7 +26,7 @@ public class LoginUI extends JFrame implements ActionListener {
         initUI();
     }
 
-    // Hàm dựng giao diện (Giữ nguyên như bro viết, rất đẹp!)
+    // Hàm dựng giao diện (Giữ nguyên)
     private void initUI() {
         this.setTitle("Đăng Nhập Game Caro");
         this.setSize(400, 300);
@@ -72,18 +76,16 @@ public class LoginUI extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Nếu bấm nút Đăng Nhập -> Gọi hàm xử lý đăng nhập
         if (e.getSource() == btnLogin) {
             xuLyDangNhap();
         } 
-        // Nếu bấm nút Đăng Ký -> Mở form đăng ký
         else if (e.getSource() == btnRegister) {
             this.dispose();
             new RegisterFrm();
         }
     }
 
-    // --- PHẦN QUAN TRỌNG ĐÃ CẬP NHẬT ---
+    // --- [UPDATE] NÂNG CẤP KẾT NỐI SSL ---
     private void xuLyDangNhap() {
         try {
             String user = txtUser.getText();
@@ -94,41 +96,44 @@ public class LoginUI extends JFrame implements ActionListener {
                 return;
             }
 
-            // 1. Kết nối Server
-            // Lưu ý: Nếu Server chạy máy khác thì đổi "localhost" thành IP Server
-            Socket socket = new Socket("localhost", 5555);
+            // 1. Cấu hình TrustStore (Để Client tin tưởng chứng chỉ Server)
+            System.setProperty("javax.net.ssl.trustStore", "carokeystore.jks");
+            System.setProperty("javax.net.ssl.trustStorePassword", "123456789");
+
+            // 2. Kết nối Server qua SSL
+            SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            SSLSocket socket = (SSLSocket) sslFactory.createSocket("localhost", 5555);
+            
+            // 
+            // Nếu kết nối thành công, dòng dưới sẽ chạy tiếp
+            
             DataInputStream in = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
-            // 2. Gửi lệnh Login
+            // 3. Gửi lệnh Login
             out.writeUTF("LOGIN|" + user + "|" + pass);
             out.flush();
 
-            // 3. Nhận kết quả
+            // 4. Nhận kết quả
             String response = in.readUTF(); 
             String[] parts = response.split("\\|");
             
-            // 4. Xử lý kết quả
             if (parts[0].equals("LOGIN_OK")) {
                 String myName = parts[1];
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công! Xin chào " + myName);
                 
-                // --- CHUYỂN CẢNH ---
-                this.dispose(); // Đóng cửa sổ Login lại
+                this.dispose(); // Đóng cửa sổ Login
                 
-                // Mở màn hình Game và TRAO SOCKET cho nó
-                // (Đảm bảo bro đã tạo file GameFrm.java như hướng dẫn trước nhé)
+                // Mở màn hình Game và truyền Socket đã kết nối
                 new GameFrm(socket, myName); 
-                
-                // LƯU Ý: KHÔNG ĐƯỢC socket.close() Ở ĐÂY!!!
                 
             } else {
                 JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!");
-                socket.close(); // Chỉ đóng kết nối khi thất bại
+                socket.close(); 
             }
 
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi kết nối Server! Kiểm tra lại xem Server bật chưa?");
+            JOptionPane.showMessageDialog(this, "Lỗi kết nối SSL! Kiểm tra xem Server đã bật chưa và file .jks có đúng chỗ không?");
             ex.printStackTrace();
         }
     }
