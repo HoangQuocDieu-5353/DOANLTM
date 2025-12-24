@@ -4,8 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-
-// --- [NEW] Import thư viện SSL ---
 import java.net.Socket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -22,23 +20,17 @@ public class RegisterFrm extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
         this.setLayout(null);
-
-        // Title
         JLabel lblTitle = new JLabel("ĐĂNG KÝ");
         lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
         lblTitle.setForeground(Color.RED);
         lblTitle.setBounds(150, 20, 100, 30);
         this.add(lblTitle);
-
-        // --- 1. User (Tài khoản) ---
         JLabel lblUser = new JLabel("Tài khoản:");
         lblUser.setBounds(50, 70, 80, 25);
         this.add(lblUser);
         txtUser = new JTextField();
         txtUser.setBounds(130, 70, 200, 25);
         this.add(txtUser);
-
-        // --- 2. Nickname (Tên hiển thị) ---
         JLabel lblNick = new JLabel("Nickname:");
         lblNick.setBounds(50, 110, 80, 25);
         this.add(lblNick);
@@ -46,7 +38,6 @@ public class RegisterFrm extends JFrame {
         txtNickname.setBounds(130, 110, 200, 25);
         this.add(txtNickname);
 
-        // --- 3. Pass (Mật khẩu) ---
         JLabel lblPass = new JLabel("Mật khẩu:");
         lblPass.setBounds(50, 150, 80, 25);
         this.add(lblPass);
@@ -74,7 +65,6 @@ public class RegisterFrm extends JFrame {
         this.setVisible(true);
     }
 
-    // --- [UPDATE] DÙNG SSL ĐỂ ĐĂNG KÝ ---
     private void xuLyDangKy() {
         try {
             String user = txtUser.getText().trim();

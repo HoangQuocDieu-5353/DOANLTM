@@ -48,11 +48,9 @@ public class GameBoardFrm extends JFrame {
     private JButton btnSend;
     private JButton btnSurrender;
     
-    // --- [NEW] NÚT MỚI ---
     private JButton btnAddFriend; 
     private JButton btnDraw; // Nút xin hòa
 
-    // Constructor Online
     public GameBoardFrm(Socket socket, GameFrm gameFrm, String myName, String competitorName, String mySide) {
         this.socket = socket;
         this.gameFrm = gameFrm;
@@ -301,7 +299,6 @@ public class GameBoardFrm extends JFrame {
         }
     }
 
-    // ... CÁC HÀM LOGIC CŨ ...
     
     private void highlightLastMove(JButton btn) {
         if (lastMoveButton != null) lastMoveButton.setBackground(NORMAL_COLOR);

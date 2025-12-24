@@ -94,9 +94,6 @@ public class GameFrm extends JFrame {
         });
         this.add(btnAddFriend);
 
-        // ====================================================================
-        // --- CỘT PHẢI: CÁC CHỨC NĂNG ---
-        // ====================================================================
         
         JLabel lblWelcome = new JLabel("Xin chào, " + username + "!");
         lblWelcome.setFont(new Font("Arial", Font.BOLD, 18));
@@ -253,7 +250,6 @@ public class GameFrm extends JFrame {
         chatFrm.toFront();
     }
     
-    // --- [UPDATE QUAN TRỌNG] NHẬN TIN NHẮN "NGẦM" ---
     public void incomingMessage(String sender, String msg) {
         // 1. Nếu chưa có cửa sổ chat -> Tạo mới (nhưng KHÔNG hiện lên)
         if (!chatWindows.containsKey(sender)) {

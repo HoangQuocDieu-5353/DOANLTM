@@ -9,7 +9,7 @@ import java.awt.event.MouseEvent;
 import java.io.DataOutputStream;
 import java.net.Socket;
 import java.util.Vector;
-import java.util.List; // Import List
+import java.util.List; 
 
 public class RankFrm extends JFrame {
     private String rankData;
@@ -19,10 +19,8 @@ public class RankFrm extends JFrame {
     private Socket socket;
     private String myUsername;
     
-    // --- [NEW] DANH SÁCH BẠN BÈ ---
     private List<String> friendList;
 
-    // Cập nhật Constructor: Thêm tham số friendList
     public RankFrm(Socket socket, String myUsername, String rankData, List<String> friendList) {
         this.socket = socket;
         this.myUsername = myUsername;
@@ -71,7 +69,6 @@ public class RankFrm extends JFrame {
         
         loadData();
 
-        // --- XỬ LÝ CHUỘT PHẢI ---
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -97,7 +94,6 @@ public class RankFrm extends JFrame {
         this.setVisible(true);
     }
     
-    // --- [UPDATE] MENU CHUỘT PHẢI ---
     private void showPopupMenu(MouseEvent e, int row) {
         String targetName = (String) table.getValueAt(row, 1); 
         String status = (String) table.getValueAt(row, 4);     

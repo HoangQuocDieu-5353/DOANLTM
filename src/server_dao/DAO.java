@@ -15,7 +15,7 @@ public class DAO {
             String dbUrl = "jdbc:mysql://localhost:3306/carodb";
             String dbClass = "com.mysql.jdbc.Driver";
             String user = "root";
-            String pass = ""; // Nhớ điền pass MySQL của bro nếu có
+            String pass = ""; 
             try {
                 Class.forName(dbClass);
                 con = DriverManager.getConnection(dbUrl, user, pass);
@@ -52,7 +52,6 @@ public class DAO {
                 return false;
             }
             
-            // Mặc định khi tạo mới IsBanned = 0 (trong DB đã set default, nhưng code này ko cần sửa)
             String sqlInsert = "INSERT INTO user (Username, Password, Nickname) VALUES (?, ?, ?)";
             PreparedStatement psInsert = con.prepareStatement(sqlInsert);
             psInsert.setString(1, username);
@@ -63,7 +62,6 @@ public class DAO {
         return false;
     }
 
-    // --- [UPDATE] CHECK THÊM TRẠNG THÁI BANNED ---
     public String checkLogin(String username, String password) {
         try {
             if (con == null || con.isClosed()) new DAO();
@@ -77,10 +75,9 @@ public class DAO {
             
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                // Kiểm tra xem có bị khóa không
                 int isBanned = rs.getInt("IsBanned");
                 if (isBanned == 1) {
-                    return "BANNED"; // Trả về cờ hiệu này để ServerThread xử lý
+                    return "BANNED"; 
                 }
                 return rs.getString("Nickname");
             }
@@ -88,7 +85,6 @@ public class DAO {
         return null;
     }
 
-    // --- [NEW] HÀM CẬP NHẬT TRẠNG THÁI KHÓA NICK (CHO ADMIN) ---
     public void updateBanStatus(String nickname, boolean ban) {
         String sql = "UPDATE user SET IsBanned = ? WHERE Nickname = ?";
         try {
@@ -193,7 +189,6 @@ public class DAO {
         return false;
     }
     
-    // --- [UPDATE] LẤY BẢNG XẾP HẠNG (KÈM TRẠNG THÁI ONLINE) ---
     public String getLeaderboard() {
         String result = "";
         // Thêm IsOnline vào câu Query
@@ -212,9 +207,6 @@ public class DAO {
         return result;
     }
 
-    // ========================================================================
-    // --- CÁC HÀM HỖ TRỢ KẾT BẠN ---
-    // ========================================================================
 
     public int getUserId(String nickname) {
         try {

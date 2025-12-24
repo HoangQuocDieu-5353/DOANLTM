@@ -6,18 +6,15 @@ import java.awt.*;
 public class PlayerProfileFrm extends JFrame {
 
     public PlayerProfileFrm(String username, int win, int lose, int draw, int score) {
-        // --- CẤU HÌNH FRAME ---
         this.setTitle("Hồ sơ người chơi: " + username);
         this.setSize(400, 500);
         this.setLocationRelativeTo(null); // Ra giữa màn hình
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Đóng form này không tắt app
         this.setLayout(new BorderLayout());
 
-        // --- TÍNH TOÁN SỐ LIỆU ---
         int totalGames = win + lose + draw;
         float winRate = totalGames == 0 ? 0 : ((float) win / totalGames) * 100;
 
-        // --- HEADER (AVATAR & TÊN) ---
         JPanel pnlHeader = new JPanel(new GridLayout(2, 1));
         pnlHeader.setBackground(new Color(230, 240, 255)); // Màu nền xanh nhạt
         pnlHeader.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));

@@ -61,7 +61,6 @@ public class ServerThread extends Thread {
                         
                         notifyFriendsStateChange();
                         
-                        // --- [FIX QUAN TRỌNG] CẬP NHẬT GIAO DIỆN ADMIN ---
                         ServerControl.updateOnlineBoard();
                     } else {
                         write("LOGIN_FAIL"); 
@@ -111,9 +110,6 @@ public class ServerThread extends Thread {
                     }
                 }
 
-                // ============================================================
-                // --- CÁC TÍNH NĂNG KẾT BẠN & CHAT RIÊNG ---
-                // ============================================================
 
                 // --- 1. YÊU CẦU KẾT BẠN ---
                 else if (command.equals("MAKE_FRIEND")) {
@@ -160,9 +156,6 @@ public class ServerThread extends Thread {
                     }
                 }
 
-                // ============================================================
-                // --- CÁC TÍNH NĂNG PHÒNG & CHƠI NHANH ---
-                // ============================================================
 
                 else if (command.equals("CREATE_ROOM")) {
                     String pass = (data.length > 1) ? data[1] : "";
@@ -235,9 +228,6 @@ public class ServerThread extends Thread {
                     }
                 }
 
-                // ============================================================
-                // --- CÁC LỆNH TRONG TRẬN ĐẤU ---
-                // ============================================================
 
                 else if (command.equals("CARO")) {
                     int x = Integer.parseInt(data[1]);

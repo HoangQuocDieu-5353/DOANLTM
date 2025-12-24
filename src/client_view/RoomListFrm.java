@@ -19,7 +19,6 @@ public class RoomListFrm extends JFrame {
         this.socket = socket;
         this.username = username;
         initUI();
-        // Mở lên là xin dữ liệu ngay
         requestUpdate();
     }
 

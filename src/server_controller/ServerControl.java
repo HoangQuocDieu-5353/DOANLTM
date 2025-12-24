@@ -24,7 +24,6 @@ public class ServerControl extends JFrame implements Runnable {
     public static Vector<ServerThread> listServerThreads = new Vector<>();
     public static Vector<Room> listRooms = new Vector<>();
     
-    // --- LINH KIỆN GIAO DIỆN ---
     private JTextArea txtLog;
     private JButton btnSendBroadcast;
     private JTextField txtBroadcast;
@@ -114,7 +113,6 @@ public class ServerControl extends JFrame implements Runnable {
         this.setVisible(true);
     }
     
-    // --- LOGIC CHẠY SERVER ---
     @Override
     public void run() {
         try {
@@ -164,7 +162,6 @@ public class ServerControl extends JFrame implements Runnable {
         });
     }
 
-    // --- [UPDATE] HÀM CẬP NHẬT BẢNG ONLINE (ĐÃ VIẾT CODE) ---
     public static void updateOnlineBoard() {
         // 1. Lấy danh sách những người đang có tên (đã đăng nhập)
         Vector<String> onlineNames = new Vector<>();
@@ -193,7 +190,6 @@ public class ServerControl extends JFrame implements Runnable {
         }
     }
 
-    // --- [UPDATE] HÀM THÔNG BÁO CHO CLIENT VÀ GỌI UPDATE GUI ---
     public static void notifyAllPlayers() {
         String msg = "ONLINE_LIST";
         
@@ -224,7 +220,6 @@ public class ServerControl extends JFrame implements Runnable {
         return null; 
     }
     
-    // --- MAIN ---
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

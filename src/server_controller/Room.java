@@ -2,8 +2,8 @@ package server_controller;
 
 public class Room {
     private String id;
-    private ServerThread creator; // Người tạo phòng
-    private String password; // Nếu null hoặc rỗng -> Phòng mở
+    private ServerThread creator; 
+    private String password; 
 
     public Room(String id, ServerThread creator, String password) {
         this.id = id;

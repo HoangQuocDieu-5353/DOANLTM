@@ -6,8 +6,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-
-// --- [NEW] Import thư viện SSL ---
 import java.net.Socket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -26,7 +24,6 @@ public class LoginUI extends JFrame implements ActionListener {
         initUI();
     }
 
-    // Hàm dựng giao diện (Giữ nguyên)
     private void initUI() {
         this.setTitle("Đăng Nhập Game Caro");
         this.setSize(400, 300);
@@ -85,7 +82,6 @@ public class LoginUI extends JFrame implements ActionListener {
         }
     }
 
-    // --- [UPDATE] NÂNG CẤP KẾT NỐI SSL ---
     private void xuLyDangNhap() {
         try {
             String user = txtUser.getText();

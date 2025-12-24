@@ -9,7 +9,6 @@ public class WaitingRoomFrm extends JDialog {
     private Socket socket;
     private String roomId;
     
-    // --- BIẾN ĐẾM NGƯỢC ---
     private Timer timer;
     private int count = 15; // 15 giây
     private JLabel lblCountDown;
@@ -98,6 +97,5 @@ public class WaitingRoomFrm extends JDialog {
                 out.flush();
             } catch (Exception ex) {}
         }
-        // Nếu chọn No thì thôi, về màn hình chính (GameFrm đã hiện sẵn ở dưới rồi)
     }
 }

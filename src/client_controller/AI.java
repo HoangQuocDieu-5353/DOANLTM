@@ -95,7 +95,6 @@ public class AI {
                 else break;
             }
             
-            // --- LOGIC MỚI: BỎ CHẶN 2 ĐẦU ---
             // Nếu đã đạt 4 quân (đánh thêm ô này là 5) thì thắng luôn, không xét blocked
             if (count >= 4) {
                 totalScore += scoreTable[5]; 

@@ -175,7 +175,6 @@ public class ClientListener extends Thread {
                     JOptionPane.showMessageDialog(gameFrm, msg, "Thông báo", JOptionPane.WARNING_MESSAGE);
                 }
                 
-                // --- [NEW] NHẬN THÔNG BÁO TỪ ADMIN (BROADCAST) ---
                 else if (command.equals("BROADCAST")) {
                     String msg = data[1];
                     SwingUtilities.invokeLater(() -> {
