@@ -361,8 +361,8 @@ public class GameBoardFrm extends JFrame {
     
     private void surrender() {
         if (isPvE) {
-            String message = "Bạn chấp nhận để thua máy sao?\nThằng gà, định chịu thua 1 con máy à? Nhục lắm!";
-            String[] options = {"Đánh tiếp (Sợ gì)", "Thoát (Tôi là gà)"};
+            String message = "Bạn chấp nhận để thua máy sao?";
+            String[] options = {"Đánh tiếp ", "Thoát "};
             int choice = JOptionPane.showOptionDialog(this, message, "Kích tướng", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
             if (choice == 1) { 
                 turnTimer.stop();

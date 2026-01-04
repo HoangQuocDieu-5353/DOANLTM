@@ -82,7 +82,7 @@ public class RegisterFrm extends JFrame {
 
             // 2. Tạo kết nối SSL (Thay cho Socket thường)
             SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-            SSLSocket socket = (SSLSocket) sslFactory.createSocket("localhost", 5555); // Port 5555
+            SSLSocket socket = (SSLSocket) sslFactory.createSocket("192.168.1.107", 5555); // Port 5555
             
             DataInputStream in = new DataInputStream(socket.getInputStream());
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());

@@ -119,7 +119,6 @@ public class ServerControl extends JFrame implements Runnable {
             new DAO().resetAllStatus();
             log("System: Đã reset toàn bộ trạng thái User về Offline.");
             
-            // Cấu hình SSL (Nhớ kiểm tra pass keystore của bro là 123456 hay 123456789 nhé)
             System.setProperty("javax.net.ssl.keyStore", "carokeystore.jks");
             System.setProperty("javax.net.ssl.keyStorePassword", "123456789"); 
 

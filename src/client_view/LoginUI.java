@@ -92,15 +92,13 @@ public class LoginUI extends JFrame implements ActionListener {
                 return;
             }
 
-            // 1. Cấu hình TrustStore (Để Client tin tưởng chứng chỉ Server)
             System.setProperty("javax.net.ssl.trustStore", "carokeystore.jks");
             System.setProperty("javax.net.ssl.trustStorePassword", "123456789");
 
             // 2. Kết nối Server qua SSL
             SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-            SSLSocket socket = (SSLSocket) sslFactory.createSocket("localhost", 5555);
+            SSLSocket socket = (SSLSocket) sslFactory.createSocket("192.168.1.107", 5555);
             
-            // 
             // Nếu kết nối thành công, dòng dưới sẽ chạy tiếp
             
             DataInputStream in = new DataInputStream(socket.getInputStream());

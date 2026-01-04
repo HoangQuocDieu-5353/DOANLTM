@@ -17,7 +17,7 @@ public class AI {
     public AI(JButton[][] buttons) {
         this.buttons = buttons;
     }
-
+    
     public int[] findBestMove(int difficulty) {
         if (difficulty == 1) return findRandomMove();
 
